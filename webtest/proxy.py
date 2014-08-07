@@ -34,7 +34,7 @@ class IPProxyRequest(ProxyRequest):
         if "host1" in host or "host2" in host:
             print("CHANGE")
             #host = "ip1"
-            host = "ip2" # test 
+            host = "ip2" 
 
         self.reactor.connectTCP(host, port, clientFactory)
 
@@ -49,4 +49,3 @@ class IPProxyFactory(http.HTTPFactory):
 
 reactor.listenTCP(8088, IPProxyFactory())
 #reactor.listenUnix("/tmp/ps", IPProxyFactory())
-reactor.run(
