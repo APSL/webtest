@@ -5,6 +5,7 @@ import inspect
 import logging
 import sys
 import os
+from .base import WebTest
 
 DEFAULT_TESTDIR = "/etc/webtests"
 
