@@ -18,6 +18,7 @@ def is_webtest(tup):
     https://github.com/locustio/locust/blob/master/locust/main.py#L293
     """
     name, item = tup
+
     return bool(
         inspect.isclass(item)
         and issubclass(item, WebTest)
