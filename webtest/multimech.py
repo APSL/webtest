@@ -28,15 +28,15 @@ class BaseTransaction(object):
         if not self.testname:
             raise ValueError("testname must be set in Transaction inherited class")
         self.custom_timers = []
-        self.gctest = get_test(self.testname, url=self.url,
+
+    def run(self):
+        gctest = get_test(self.testname, url=self.url,
                 driver="phantomjs", timeout=self.timeout)
-        if not self.gctest:
+        if not gctest:
             msg = "WebTest {} not found at dir {}".format(self.testname, DEFAULT_TESTDIR)
             log.error(msg)
             raise IOError(msg)
-
-    def run(self):
-        for elapsed, name, doc, error in self.gctest:
+        for elapsed, name, doc, error in gctest:
             self.custom_timers[doc] = elapsed
             print "Exec {name} in {elapsed:10.2f}s ({doc})".format(**locals())
             assert (not error), error
