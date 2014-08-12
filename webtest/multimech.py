@@ -22,12 +22,14 @@ log = logging.getLogger(__name__)
 class BaseTransaction(object):
     testname = None
     url = None
+    timeout = 50
 
     def __init__(self):
         if not self.testname:
             raise ValueError("testname must be set in Transaction inherited class")
         self.custom_timers = []
-        self.gctest = get_test(self.testname, url=self.url, driver="phantomjs")
+        self.gctest = get_test(self.testname, url=self.url,
+                driver="phantomjs", timeout=self.timeout)
         if not self.gctest:
             msg = "WebTest {} not found at dir {}".format(self.testname, DEFAULT_TESTDIR)
             log.error(msg)
@@ -38,4 +40,3 @@ class BaseTransaction(object):
             self.custom_timers[doc] = elapsed
             print "Exec {name} in {elapsed:10.2f}s ({doc})".format(**locals())
             assert (not error), error
-
