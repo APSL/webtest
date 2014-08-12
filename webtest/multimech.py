@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 class BaseTransaction(object):
     testname = None
     url = None
-    timeout = 50
+    timeout = 120
 
     def __init__(self):
         if not self.testname:
