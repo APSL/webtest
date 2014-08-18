@@ -1,1 +1,3 @@
 .hg
+*egg-info
+*.pyc

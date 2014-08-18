@@ -100,13 +100,12 @@ class WebTest(object):
     def run(self):
         for elapsed, name, doc, error in self:
             if error:
-                print "ERROR {name} in {elapsed:10.2f}s ({doc})".format(**locals())
-                print error
-                return 1
+                print "ERROR {name} in {elapsed:10.2f}s ({doc}) --> [[{error}]]".format(**locals())
+                self.driver.save_screenshot('error-{}.png'.format(name))
             else:
                 print "Run {name} in {elapsed:10.2f}s ({doc})".format(**locals())
-
-        #self.driver.save_screenshot('postpago.png')
+                #self.driver.save_screenshot('ok-{}.png'.format(name))
+            assert (not error), error
         self.close()
 
     def close(self):
