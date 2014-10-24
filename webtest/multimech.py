@@ -39,7 +39,7 @@ class BaseTransaction(object):
             else:
                 print "Run {name} in {elapsed:10.2f}s ({doc})".format(**locals())
                 #self.driver.save_screenshot('ok-{}.png'.format(name))
-            assert (not error), error
+            assert (not error), error.strip()
         gctest.close()
 
     def get_webtest(self, timeout=None):
