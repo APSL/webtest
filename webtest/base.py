@@ -31,9 +31,9 @@ def step(func=None, order=1):
         try:
             func(*args, **kwargs)
         except TimeoutException, e:
-            error = "Timeout step {step_name} ({step_doc}). {e}".format(**locals())
+            error = u"Timeout step {step_name} ({step_doc}). {e}".format(**locals())
         except Exception as e:
-            error = "Error step {step_name} ({step_doc}). {e}".format(**locals())
+            error = u"Error step {step_name} ({step_doc}). {e}".format(**locals())
 
         elapsed = time.time() - t1
         return elapsed, step_name, step_doc, error
@@ -89,6 +89,15 @@ class WebTest(object):
     def wait_for_class(self, name):
         """calls selenium webdriver wait for class name"""
         self.wait.until(EC.presence_of_element_located((By.CLASS_NAME, name)))
+
+    def wait_for_xpath(self, name):
+        """calls selenium webdriver wait for xpath"""
+        self.wait.until(EC.presence_of_element_located((By.XPATH, name)))
+
+    def wait_for_css_selector_in_element(self, web_element, name):
+        """calls selenium webdriver wait for css, search in web_element"""
+        WebDriverWait(web_element, self.timeout).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, name)))
 
     def __iter__(self):
         steps = inspect.getmembers(self, predicate=inspect.ismethod)
