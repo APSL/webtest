@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 # author: bcabezas@apsl.net
 
-
 from webtest import __VERSION__
 from webtest.loader import get_test, DEFAULT_TESTDIR
 
@@ -31,7 +30,7 @@ def main():
     logging.basicConfig(level=level)
 
     if args:
-        test = get_test(args[0], testdir=options.testdir)
+        test = get_test(args[0], testdir=options.testdir, driver='remote')
 
         if not test:
             print "Test {} no encontrado en {}".format(args[0], options.testdir)

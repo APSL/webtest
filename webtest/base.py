@@ -12,6 +12,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 log = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ def step(func=None, order=1):
             trace = "".join(traceback.format_exception(*exc_info))
             error = u"Error step {step_name} ({step_doc}). {msg}.\n{trace}".format(
                     step_name=step_name, step_doc=step_doc,
-                    msg=e.msg, trace=trace)
+                    msg=e, trace=trace)
 
         elapsed = time.time() - t1
         return elapsed, step_name, step_doc, error
@@ -53,20 +54,26 @@ class WebTest(object):
 
     DRIVER_FIREFOX = 'firefox'
     DRIVER_PHANTOMJS = 'phantomjs'
+    DRIVER_REMOTE = 'remote'
     DRIVER_CHOICES = (
         (DRIVER_FIREFOX, webdriver.Firefox),
-        (DRIVER_PHANTOMJS, webdriver.PhantomJS)
+        (DRIVER_PHANTOMJS, webdriver.PhantomJS),
+        (DRIVER_REMOTE, webdriver.Remote),
     )
     DRIVER_ARGS = {
         DRIVER_PHANTOMJS:  {
             "service_args": [ '--ignore-ssl-errors=true', ]
         },
-        DRIVER_FIREFOX: {}
+        DRIVER_FIREFOX: {},
+        DRIVER_REMOTE: {
+            'command_executor': 'http://127.0.0.1:4444/wd/hub',
+            'desired_capabilities': DesiredCapabilities.FIREFOX,
+            },
     }
 
     def __init__(self, driver=DRIVER_PHANTOMJS, url=None,
-            timeout=DEFAULT_TIMEOUT, proxy=None, trace=False):
-        from selenium.webdriver.common.proxy import Proxy, ProxyType
+            timeout=DEFAULT_TIMEOUT, proxy=None):
+        #from selenium.webdriver.common.proxy import Proxy, ProxyType
 
         #proxy_url = "http://localhost:8088"
         # proxy = Proxy()
@@ -87,7 +94,6 @@ class WebTest(object):
         self.driver.implicitly_wait(timeout)
         self.wait = WebDriverWait(self.driver, timeout)
         self.url = url or self.URL
-        self.trace = trace
 
     def wait_for_id(self, name):
         """calls selenium webdriver wait for ID name"""
@@ -99,7 +105,7 @@ class WebTest(object):
 
     def wait_for_xpath(self, name):
         """calls selenium webdriver wait for xpath"""
-        self.wait.until(EC.presence_of_element_located((By.XPATH, name)))
+        self.wait.until(EC.visibility_of_element_located((By.XPATH, name)))
 
     def wait_for_css_selector_in_element(self, web_element, name):
         """calls selenium webdriver wait for css, search in web_element"""

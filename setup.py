@@ -19,7 +19,10 @@ setup(
     description="APSL web testing tool",
     long_description=open('README.rst').read(),
     entry_points={
-        'console_scripts': ['webtest = webtest.main:main'],
+        'console_scripts': [
+            'webtest = webtest.main:main',
+            'check_web = webtest.nrpe:test',
+        ],
     },
     install_requires=[
         'selenium',
