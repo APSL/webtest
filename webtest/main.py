@@ -4,7 +4,7 @@
 
 
 from webtest import __VERSION__
-from webtest.base import get_test, DEFAULT_TESTDIR
+from webtest.loader import get_test, DEFAULT_TESTDIR
 
 from optparse import OptionParser
 import logging

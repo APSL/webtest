@@ -32,8 +32,10 @@ def step(func=None, order=1):
             func(*args, **kwargs)
         except TimeoutException, e:
             error = u"Timeout step {step_name} ({step_doc}). {e}".format(**locals())
+            raise
         except Exception as e:
             error = u"Error step {step_name} ({step_doc}). {e}".format(**locals())
+            raise
 
         elapsed = time.time() - t1
         return elapsed, step_name, step_doc, error
@@ -59,7 +61,7 @@ class WebTest(object):
     }
 
     def __init__(self, driver=DRIVER_PHANTOMJS, url=None,
-            timeout=DEFAULT_TIMEOUT, proxy=None):
+            timeout=DEFAULT_TIMEOUT, proxy=None, trace=False):
         from selenium.webdriver.common.proxy import Proxy, ProxyType
 
         #proxy_url = "http://localhost:8088"
@@ -81,6 +83,7 @@ class WebTest(object):
         self.driver.implicitly_wait(timeout)
         self.wait = WebDriverWait(self.driver, timeout)
         self.url = url or self.URL
+        self.trace = trace
 
     def wait_for_id(self, name):
         """calls selenium webdriver wait for ID name"""
@@ -109,10 +112,10 @@ class WebTest(object):
     def run(self):
         for elapsed, name, doc, error in self:
             if error:
-                print "ERROR {name} in {elapsed:10.2f}s ({doc}) --> [[{error}]]".format(**locals())
+                print u"ERROR {name} in {elapsed:10.2f}s ({doc}) --> [[{error}]]".format(**locals())
                 self.driver.save_screenshot('error-{}.png'.format(name))
             else:
-                print "Run {name} in {elapsed:10.2f}s ({doc})".format(**locals())
+                print u"Run {name} in {elapsed:10.2f}s ({doc})".format(**locals())
                 #self.driver.save_screenshot('ok-{}.png'.format(name))
             assert (not error), error
         self.close()
