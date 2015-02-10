@@ -5,6 +5,8 @@ import time
 import functools
 import inspect
 import logging
+import traceback
+import sys
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -32,10 +34,12 @@ def step(func=None, order=1):
             func(*args, **kwargs)
         except TimeoutException, e:
             error = u"Timeout step {step_name} ({step_doc}). {e}".format(**locals())
-            raise
         except Exception as e:
-            error = u"Error step {step_name} ({step_doc}). {e}".format(**locals())
-            raise
+            exc_info = sys.exc_info()
+            trace = "".join(traceback.format_exception(*exc_info))
+            error = u"Error step {step_name} ({step_doc}). {msg}.\n{trace}".format(
+                    step_name=step_name, step_doc=step_doc,
+                    msg=e.msg, trace=trace)
 
         elapsed = time.time() - t1
         return elapsed, step_name, step_doc, error
@@ -113,11 +117,11 @@ class WebTest(object):
         for elapsed, name, doc, error in self:
             if error:
                 print u"ERROR {name} in {elapsed:10.2f}s ({doc}) --> [[{error}]]".format(**locals())
-                self.driver.save_screenshot('error-{}.png'.format(name))
+                #self.driver.save_screenshot('error-{}.png'.format(name))
+                sys.exit(1)
             else:
                 print u"Run {name} in {elapsed:10.2f}s ({doc})".format(**locals())
                 #self.driver.save_screenshot('ok-{}.png'.format(name))
-            assert (not error), error
         self.close()
 
     def close(self):
