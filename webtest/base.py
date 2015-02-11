@@ -131,7 +131,7 @@ class WebTest(object):
         self.close()
 
     def close(self):
-        self.driver.close()
+        self.driver.quit()
 
 
 if __name__ == "__main__":
