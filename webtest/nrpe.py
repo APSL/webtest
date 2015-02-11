@@ -21,17 +21,19 @@ NAGIOSCODES = {
 
 log = logging.getLogger(NAME)
 
-def nagios_return(code, response, times):
+def nagios_return(code, response, times=None):
     """ prints the response message
         and exits the script with one
         of the defined exit codes
         DOES NOT RETURN
     """
+    perfdata = None
+    out = "{code} : {response}" 
+    if times:
+        perfdata = " ".join("'{0}'={1:.3}s".format(*t) for t in times.iteritems())
+        out += " | {perfdata}"
 
-    perfdata = " ".join("'{0}'={1:.3}s".format(*t) for t in times.iteritems())
-
-    print "{code} : {response} | {perfdata}".format(
-            code=code, response=response, perfdata=perfdata)
+    print out.format(code=code, response=response, perfdata=perfdata)
 
     return NAGIOSCODES[code]
 
@@ -51,6 +53,7 @@ def do_test(webtest):
                 response="Error in {name}: {error}".format(**locals()),
                 times=times)
     total = time.time() - start
+    times["Total"] = total
     return nagios_return(code='OK',
         response="Test Ok en {}s".format(total), 
         times=times)
@@ -72,7 +75,7 @@ def test(testdir, test_name):
 
     code = do_test(webtest)
     webtest.close()
-    return code
+    sys.exit(code)
 
 
 if __name__ == '__main__':
