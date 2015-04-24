@@ -7,6 +7,7 @@ import inspect
 import logging
 import traceback
 import sys
+from webtest.metrics import get_metrics_client
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -14,7 +15,6 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.common.proxy import Proxy, ProxyType
-from statistics import StatisticsClient
 import uuid
 
 log = logging.getLogger(__name__)
@@ -65,18 +65,19 @@ class WebTest(object):
     )
     DRIVER_ARGS = {
         DRIVER_PHANTOMJS:  {
-            "service_args": [ '--ignore-ssl-errors=true', ]
+            "service_args": ['--ignore-ssl-errors=true', ]
         },
         DRIVER_FIREFOX: {
         },
         DRIVER_REMOTE: {
-            'command_executor': 'http://127.0.0.1:4444/wd/hub',
+            'command_executor': 'http://hub:4444/wd/hub',
             'desired_capabilities': DesiredCapabilities.FIREFOX,
             },
     }
 
     def __init__(self, driver=DRIVER_PHANTOMJS, url=None,
-            timeout=DEFAULT_TIMEOUT, proxy=None, stats=False, stats_name='webtest'):        
+            timeout=DEFAULT_TIMEOUT, proxy=None, stats=False,
+            stats_name='webtest'):
         # proxy = "url_sin_http:port"
         kwargs = self.DRIVER_ARGS[driver]
         if proxy:
@@ -134,9 +135,12 @@ class WebTest(object):
     def run(self):
         ok_stats = []
         err_stat = None
+        if self.stats:
+            client = get_metrics_client()
 
         test_uid = str(uuid.uuid1())
         init_test_time = time.time()
+
         for elapsed, name, doc, error in self:
             if error:
                 print u"ERROR {name} in {elapsed:10.2f}s ({doc}) --> [[{error}]]".format(**locals())
@@ -147,16 +151,16 @@ class WebTest(object):
                 print u"Run {name} in {elapsed:10.2f}s ({doc})".format(**locals())
                 #self.driver.save_screenshot('ok-{}.png'.format(name))
                 ok_stats.append([time.time(), name, elapsed, test_uid])
+
         elapsed_test_time = time.time() - init_test_time
         print u"Total in {}".format(elapsed_test_time)
 
         if self.stats:
-            stats_client = StatisticsClient()
-            points =    [{
-                            'points': [[time.time(), "total", elapsed_test_time, test_uid]],
-                            'name': self.stats_name,
-                            'columns': ['time', "step", "elapsed", "test_uid"]
-                        }]
+            points = [{
+                'points': [[time.time(), "total", elapsed_test_time, test_uid]],
+                'name': self.stats_name,
+                'columns': ['time', "step", "elapsed", "test_uid"]
+            }]
             if err_stat:
                 points.append({
                             'points': [err_stat],
@@ -169,10 +173,8 @@ class WebTest(object):
                         'name': self.stats_name,
                         'columns': ['time', 'step', 'elapsed', "test_uid"]
                     })
-            stats_client.write_points(points)
-
+            client.write_points(points)
         self.close()
-
 
 
 if __name__ == "__main__":

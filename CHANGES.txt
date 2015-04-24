@@ -1,0 +1,2 @@
+v0.0.5 vie abr 24 12:14:50 CEST 2015
+ * docker env vars for influx 
