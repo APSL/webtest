@@ -7,13 +7,15 @@ import inspect
 import logging
 import traceback
 import sys
-from influxdb.influxdb08 import InfluxDBClient
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from selenium.webdriver.common.proxy import Proxy, ProxyType
+from statistics import StatisticsClient
+import uuid
 
 log = logging.getLogger(__name__)
 
@@ -65,7 +67,8 @@ class WebTest(object):
         DRIVER_PHANTOMJS:  {
             "service_args": [ '--ignore-ssl-errors=true', ]
         },
-        DRIVER_FIREFOX: {},
+        DRIVER_FIREFOX: {
+        },
         DRIVER_REMOTE: {
             'command_executor': 'http://127.0.0.1:4444/wd/hub',
             'desired_capabilities': DesiredCapabilities.FIREFOX,
@@ -73,21 +76,16 @@ class WebTest(object):
     }
 
     def __init__(self, driver=DRIVER_PHANTOMJS, url=None,
-            timeout=DEFAULT_TIMEOUT, proxy=None):
-        #from selenium.webdriver.common.proxy import Proxy, ProxyType
-
-        #proxy_url = "http://localhost:8088"
-        # proxy = Proxy()
-        # proxy.http_proxy = proxy_url
-        #{
-            #'proxyType': ProxyType.MANUAL,
-            #'httpProxy': proxy_url})
-        #service_args = [
-            #'--proxy=127.0.0.1:8088',
-            #'--proxy-type=http',
-        #]
-
+            timeout=DEFAULT_TIMEOUT, proxy=None, stats=False, stats_name='webtest'):        
+        # proxy = "url_sin_http:port"
         kwargs = self.DRIVER_ARGS[driver]
+        if proxy:
+            selenium_proxy = Proxy(
+                {'proxyType': ProxyType.MANUAL,
+                'httpProxy': proxy,
+                'sslProxy': proxy,
+                })
+            kwargs["proxy"] = selenium_proxy
         try:
             self.driver = dict(self.DRIVER_CHOICES)[driver](**kwargs)
         except KeyError:
@@ -96,6 +94,8 @@ class WebTest(object):
         self.driver.implicitly_wait(timeout)
         self.wait = WebDriverWait(self.driver, timeout)
         self.url = url or self.URL
+        self.stats = stats
+        self.stats_name = stats_name
 
     def close(self):
         self.driver.quit()
@@ -131,44 +131,46 @@ class WebTest(object):
         for s in steps:
             yield s()
 
-    def run(self, stats=False, stats_name='webtest'):
+    def run(self):
         ok_stats = []
         err_stat = None
 
+        test_uid = str(uuid.uuid1())
         init_test_time = time.time()
         for elapsed, name, doc, error in self:
             if error:
                 print u"ERROR {name} in {elapsed:10.2f}s ({doc}) --> [[{error}]]".format(**locals())
                 #self.driver.save_screenshot('error-{}.png'.format(name))
-                err_stat = [time.time(), name, error]
+                err_stat = [time.time(), name, error, test_uid]
                 break
             else:
                 print u"Run {name} in {elapsed:10.2f}s ({doc})".format(**locals())
                 #self.driver.save_screenshot('ok-{}.png'.format(name))
-                ok_stats.append([time.time(), name, elapsed])
+                ok_stats.append([time.time(), name, elapsed, test_uid])
         elapsed_test_time = time.time() - init_test_time
         print u"Total in {}".format(elapsed_test_time)
 
-        if stats:
-            client = InfluxDBClient("localhost", 8086, "root", "root", "mydata")
+        if self.stats:
+            stats_client = StatisticsClient()
             points =    [{
-                            'points': [[time.time(), "total", elapsed_test_time]],
-                            'name': stats_name,
-                            'columns': ['time', "step", "elapsed"]
+                            'points': [[time.time(), "total", elapsed_test_time, test_uid]],
+                            'name': self.stats_name,
+                            'columns': ['time', "step", "elapsed", "test_uid"]
                         }]
             if err_stat:
                 points.append({
                             'points': [err_stat],
-                            'name': '{}_errors'.format(stats_name),
-                            'columns': ['time', "step", "error"]
+                            'name': '{}_errors'.format(self.stats_name),
+                            'columns': ['time', "step", "error", "test_uid"]
                         })
             if ok_stats:
                 points.append({
                         'points': ok_stats,
-                        'name': stats_name,
-                        'columns': ['time', 'step', 'elapsed']
+                        'name': self.stats_name,
+                        'columns': ['time', 'step', 'elapsed', "test_uid"]
                     })
-            client.write_points(points)
+            stats_client.write_points(points)
+
         self.close()
 
 
