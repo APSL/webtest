@@ -7,7 +7,7 @@ import inspect
 import logging
 import traceback
 import sys
-from influxdb.influxdb08 import InfluxDBClient
+from webtest.metrics import get_metrics_client
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -67,7 +67,7 @@ class WebTest(object):
         },
         DRIVER_FIREFOX: {},
         DRIVER_REMOTE: {
-            'command_executor': 'http://127.0.0.1:4444/wd/hub',
+            'command_executor': 'http://hub:4444/wd/hub',
             'desired_capabilities': DesiredCapabilities.FIREFOX,
             },
     }
@@ -134,6 +134,8 @@ class WebTest(object):
     def run(self, stats=False, stats_name='webtest'):
         ok_stats = []
         err_stat = None
+        if stats:
+            client = get_metrics_client()
 
         init_test_time = time.time()
         for elapsed, name, doc, error in self:
@@ -150,18 +152,18 @@ class WebTest(object):
         print u"Total in {}".format(elapsed_test_time)
 
         if stats:
-            client = InfluxDBClient("localhost", 8086, "root", "root", "mydata")
-            points =    [{
+            points = [{
                             'points': [[time.time(), "total", elapsed_test_time]],
                             'name': stats_name,
                             'columns': ['time', "step", "elapsed"]
                         }]
-            if err_stat:
+            if err_stat and False:
                 points.append({
                             'points': [err_stat],
                             'name': '{}_errors'.format(stats_name),
                             'columns': ['time', "step", "error"]
                         })
+
             if ok_stats:
                 points.append({
                         'points': ok_stats,
@@ -170,7 +172,6 @@ class WebTest(object):
                     })
             client.write_points(points)
         self.close()
-
 
 
 if __name__ == "__main__":
