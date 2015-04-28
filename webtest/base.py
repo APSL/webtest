@@ -16,6 +16,7 @@ from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.common.proxy import Proxy, ProxyType
 import uuid
+from collections import defaultdict
 
 log = logging.getLogger(__name__)
 
@@ -133,8 +134,8 @@ class WebTest(object):
             yield s()
 
     def run(self):
-        ok_stats = []
-        err_stat = None
+        ok_stats = defaultdict(list)
+        err_stats = defaultdict(list)
         if self.stats:
             client = get_metrics_client()
 
@@ -145,34 +146,44 @@ class WebTest(object):
             if error:
                 print u"ERROR {name} in {elapsed:10.2f}s ({doc}) --> [[{error}]]".format(**locals())
                 #self.driver.save_screenshot('error-{}.png'.format(name))
-                err_stat = [time.time(), name, error, test_uid]
+                err_stats["{}.{}.errors".format(self.stats_name, name)].append([time.time(), error, test_uid])
                 break
             else:
                 print u"Run {name} in {elapsed:10.2f}s ({doc})".format(**locals())
                 #self.driver.save_screenshot('ok-{}.png'.format(name))
-                ok_stats.append([time.time(), name, elapsed, test_uid])
+                ok_stats["{}.{}".format(self.stats_name, name)].append([time.time(), elapsed, test_uid])
 
         elapsed_test_time = time.time() - init_test_time
         print u"Total in {}".format(elapsed_test_time)
 
         if self.stats:
             points = [{
-                'points': [[time.time(), "total", elapsed_test_time, test_uid]],
-                'name': self.stats_name,
-                'columns': ['time', "step", "elapsed", "test_uid"]
+                'points': [[time.time(), test_uid]],
+                'name': '{}.executions'.format(self.stats_name),
+                'columns': ['time', "test_uid"]
             }]
-            if err_stat:
+
+            if not err_stats: # Tiempo Total
                 points.append({
-                            'points': [err_stat],
-                            'name': '{}_errors'.format(self.stats_name),
-                            'columns': ['time', "step", "error", "test_uid"]
+                    'points': [[time.time(), elapsed_test_time, test_uid]],
+                    'name': '{}.total'.format(self.stats_name),
+                    'columns': ['time', "elapsed", "test_uid"]
+                })
+
+            for key, value in err_stats.iteritems():
+                points.append({
+                            'points': value,
+                            'name': key,
+                            'columns': ['time', "error", "test_uid"]
                         })
-            if ok_stats:
+
+            for key, value in ok_stats.iteritems():
                 points.append({
-                        'points': ok_stats,
-                        'name': self.stats_name,
-                        'columns': ['time', 'step', 'elapsed', "test_uid"]
+                        'points': value,
+                        'name': key,
+                        'columns': ['time', 'elapsed', "test_uid"]
                     })
+            
             client.write_points(points)
         self.close()
 
