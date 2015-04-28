@@ -21,6 +21,7 @@ from collections import defaultdict
 log = logging.getLogger(__name__)
 
 DEFAULT_TIMEOUT = 5
+LIMIT_EXCEPTION_CHARS = 300
 
 
 def step(func=None, order=1):
@@ -28,6 +29,22 @@ def step(func=None, order=1):
 
     if func is None:
         return functools.partial(step, order=order)
+
+    def format_traceback(trace):
+        result = ""
+        for index, s_trace in enumerate(trace.split("File")):
+            if index > 0:
+                result += "File "
+            result += s_trace[:LIMIT_EXCEPTION_CHARS]
+        return result
+
+    def format_exception(e, step_name, step_doc):
+        exc_info = sys.exc_info()
+        trace = format_traceback("".join(traceback.format_exception(*exc_info)))
+        msg = str(e)[:LIMIT_EXCEPTION_CHARS]
+        error = u"{type_error} error in step {step_name} ({step_doc}).\n{trace}\n-----------\n{msg}".format(
+                    type_error=type(e), step_name=step_name, step_doc=step_doc, trace=trace, msg=msg)
+        return error
 
     @functools.wraps(func)
     def f(*args, **kwargs):
@@ -37,15 +54,8 @@ def step(func=None, order=1):
         t1 = time.time()
         try:
             func(*args, **kwargs)
-        except TimeoutException, e:
-            error = u"Timeout step {step_name} ({step_doc}). {e}".format(**locals())
         except Exception as e:
-            exc_info = sys.exc_info()
-            trace = "".join(traceback.format_exception(*exc_info))
-            error = u"Error step {step_name} ({step_doc}). {msg}.\n{trace}".format(
-                    step_name=step_name, step_doc=step_doc,
-                    msg=e, trace=trace)
-
+            error = format_exception(e, step_name, step_doc)
         elapsed = time.time() - t1
         return elapsed, step_name, step_doc, error
     f.order = order
