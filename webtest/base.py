@@ -12,17 +12,16 @@ from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.common.proxy import Proxy, ProxyType
 import uuid
 from collections import defaultdict
+from webtest.screenshots import save_htmls_screenshots
 
 log = logging.getLogger(__name__)
 
 DEFAULT_TIMEOUT = 5
 LIMIT_EXCEPTION_CHARS = 300
-
 
 def step(func=None, order=1):
     """Decorador para step. para obtener tiempo"""
@@ -44,6 +43,7 @@ def step(func=None, order=1):
         msg = str(e)[:LIMIT_EXCEPTION_CHARS]
         error = u"{type_error} error in step {step_name} ({step_doc}).\n{trace}\n-----------\n{msg}".format(
                     type_error=type(e), step_name=step_name, step_doc=step_doc, trace=trace, msg=msg)
+        
         return error
 
     @functools.wraps(func)
@@ -172,28 +172,27 @@ class WebTest(object):
                 'name': '{}.executions'.format(self.stats_name),
                 'columns': ['time', "test_uid"]
             }]
-
             if not err_stats: # Tiempo Total
                 points.append({
                     'points': [[time.time(), elapsed_test_time, test_uid]],
                     'name': '{}.total'.format(self.stats_name),
                     'columns': ['time', "elapsed", "test_uid"]
                 })
-
+                save_htmls_screenshots("{}/oks".format(self.stats_name), self.driver, "{}_{}".format(name, test_uid), push_to_s3=True)
+            else:
+                save_htmls_screenshots("{}/errors/{}".format(self.stats_name, name), self.driver, "{}_{}".format(name, test_uid), push_to_s3=True)
             for key, value in err_stats.iteritems():
                 points.append({
                             'points': value,
                             'name': key,
                             'columns': ['time', "error", "test_uid"]
                         })
-
             for key, value in ok_stats.iteritems():
                 points.append({
                         'points': value,
                         'name': key,
                         'columns': ['time', 'elapsed', "test_uid"]
                     })
-            
             client.write_points(points)
         self.close()
 
