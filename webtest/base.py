@@ -17,11 +17,13 @@ from selenium.webdriver.common.proxy import Proxy, ProxyType
 import uuid
 from collections import defaultdict
 from webtest.screenshots import save_htmls_screenshots
+import cgi
 
 log = logging.getLogger(__name__)
 
 DEFAULT_TIMEOUT = 5
 LIMIT_EXCEPTION_CHARS = 300
+SCREENSHOTS_URL_PREFIX = "https://s3-eu-west-1.amazonaws.com/wachiman-speed"
 
 def step(func=None, order=1):
     """Decorador para step. para obtener tiempo"""
@@ -154,13 +156,33 @@ class WebTest(object):
 
         for elapsed, name, doc, error in self:
             if error:
+
+                error_html="""
+<div style="height:700px">
+    <table>
+        <tr>
+            <td>
+                <img width="300px" valign="top" src='{img_src}' />
+            </td>
+            <td width="300px" style="font-size:8px">
+                <font size="1">
+                    {error}
+                </font>
+            </td>
+    </table>
+</div>
+"""
                 print u"ERROR {name} in {elapsed:10.2f}s ({doc}) --> [[{error}]]".format(**locals())
-                #self.driver.save_screenshot('error-{}.png'.format(name))
-                err_stats["{}.{}.errors".format(self.stats_name, name)].append([time.time(), error, test_uid])
+                error = cgi.escape(error)
+                img_src = "{}/{}/errors/{}/{}_{}.png".format(
+                    SCREENSHOTS_URL_PREFIX, self.stats_name, name, name, test_uid)
+                err_stats["{}.{}.errors".format(self.stats_name, name)].append(
+                    [time.time(),
+                    error_html.format(error=error, img_src=img_src),
+                    test_uid])
                 break
             else:
                 print u"Run {name} in {elapsed:10.2f}s ({doc})".format(**locals())
-                #self.driver.save_screenshot('ok-{}.png'.format(name))
                 ok_stats["{}.{}".format(self.stats_name, name)].append([time.time(), elapsed, test_uid])
 
         elapsed_test_time = time.time() - init_test_time
