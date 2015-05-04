@@ -26,6 +26,7 @@ setup(
     },
     install_requires=[
         'selenium',
+        'tinys3',
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',
