@@ -158,13 +158,13 @@ class WebTest(object):
             if error:
 
                 error_html="""
-<div style="height:700px">
+<div>
     <table>
         <tr>
             <td>
                 <img width="300px" valign="top" src='{img_src}' />
             </td>
-            <td width="300px" style="font-size:8px">
+            <td width="300px">
                 <font size="1">
                     {error}
                 </font>
