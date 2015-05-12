@@ -23,28 +23,30 @@ log = logging.getLogger(__name__)
 DEFAULT_TIMEOUT = 5
 LIMIT_EXCEPTION_CHARS = 300
 
+
+def format_traceback(trace):
+    result = ""
+    for index, s_trace in enumerate(trace.split("File")):
+        if index > 0:
+            result += "File "
+        result += s_trace[:LIMIT_EXCEPTION_CHARS]
+    return result
+
+
+def format_exception(e, step_name, step_doc):
+    exc_info = sys.exc_info()
+    trace = format_traceback("".join(traceback.format_exception(*exc_info)))
+    msg = str(e)[:LIMIT_EXCEPTION_CHARS]
+    error = u"{type_error} error in step {step_name} ({step_doc}).\n{trace}\n-----------\n{msg}".format(
+                type_error=type(e), step_name=step_name, step_doc=step_doc, trace=trace, msg=msg)
+    return error
+
+
 def step(func=None, order=1):
     """Decorador para step. para obtener tiempo"""
 
     if func is None:
         return functools.partial(step, order=order)
-
-    def format_traceback(trace):
-        result = ""
-        for index, s_trace in enumerate(trace.split("File")):
-            if index > 0:
-                result += "File "
-            result += s_trace[:LIMIT_EXCEPTION_CHARS]
-        return result
-
-    def format_exception(e, step_name, step_doc):
-        exc_info = sys.exc_info()
-        trace = format_traceback("".join(traceback.format_exception(*exc_info)))
-        msg = str(e)[:LIMIT_EXCEPTION_CHARS]
-        error = u"{type_error} error in step {step_name} ({step_doc}).\n{trace}\n-----------\n{msg}".format(
-                    type_error=type(e), step_name=step_name, step_doc=step_doc, trace=trace, msg=msg)
-        
-        return error
 
     @functools.wraps(func)
     def f(*args, **kwargs):
@@ -88,7 +90,7 @@ class WebTest(object):
 
     def __init__(self, driver=DRIVER_PHANTOMJS, url=None,
             timeout=DEFAULT_TIMEOUT, proxy=None, stats=False,
-            stats_name='webtest'):
+            stats_name='webtest', min_window_width=None):
         # proxy = "url_sin_http:port"
         kwargs = self.DRIVER_ARGS[driver]
         if proxy:
@@ -102,12 +104,23 @@ class WebTest(object):
             self.driver = dict(self.DRIVER_CHOICES)[driver](**kwargs)
         except KeyError:
             self.driver = webdriver.PhantomJS()
+
+        self._set_min_width(min_window_width)
         self.timeout = timeout
         self.driver.implicitly_wait(timeout)
         self.wait = WebDriverWait(self.driver, timeout)
         self.url = url or self.URL
         self.stats = stats
         self.stats_name = stats_name
+
+    def _set_min_width(self, min_width):
+        """Sets minimal width"""
+        if min_width:
+            size = self.driver.get_window_size()
+            width = size.get('width')
+            height = size.get('height')
+            if width < min_width:
+                self.driver.set_window_size(min_width, height)
 
     def close(self):
         self.driver.quit()
@@ -136,12 +149,15 @@ class WebTest(object):
         WebDriverWait(web_element, self.timeout).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, name)))
 
-    def __iter__(self):
+    def _get_steps(self):
         steps = inspect.getmembers(self, predicate=inspect.ismethod)
         steps = [s for _, s in steps if hasattr(s, "order")]
         steps.sort(key=lambda f: f.order)
-        for s in steps:
-            yield s()
+        return steps
+
+    def __iter__(self):
+        for step in self._get_steps():
+            yield step()
 
     def run(self):
         ok_stats = defaultdict(list)
@@ -172,7 +188,8 @@ class WebTest(object):
                 'name': '{}.executions'.format(self.stats_name),
                 'columns': ['time', "test_uid"]
             }]
-            if not err_stats: # Tiempo Total
+            if not err_stats:
+                # Tiempo Total
                 points.append({
                     'points': [[time.time(), elapsed_test_time, test_uid]],
                     'name': '{}.total'.format(self.stats_name),
