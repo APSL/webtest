@@ -63,16 +63,16 @@ def push_file_to_s3(filename, filepath, s3_folder):
     try:
         fullpath = "%s/%s" % (filepath, filename)
         f = open(fullpath, "rb")
-    except IOError:
-        logging.error("No se ha podido subir el archivo para subirlo a S3, posiblemente no se ha guardado.")
+    except IOError as e:
+        logging.error("No se ha podido subir el archivo para subirlo a S3, posiblemente no se ha guardado: \n%s" % e)
     if f:
         try:
             conn = tinys3.Connection(AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY, endpoint=ENDPOINT)
             conn.upload("%s/%s" % (s3_folder, filename), f, BUCKET_NAME)
             f.close()
-        except Exception:
+        except Exception as e:
             f.close()
-            logging.error("error subiendo archivo a S3")
+            logging.error("error subiendo archivo a S3: \n%s" % e)
         else:            
             os.remove(fullpath)
 
