@@ -127,24 +127,43 @@ class WebTest(object):
     def close(self):
         self.driver.quit()
 
-    def wait_for_id(self, name, timeout=None):
+    def wait_for_id(self, name, timeout=None, visible=False):
         """calls selenium webdriver wait for ID name"""
         if not timeout:
             timeout = self.timeout
-        WebDriverWait(self.driver, timeout).until(
+        if visible:
+            WebDriverWait(self.driver, timeout).until(
+                EC.visibility_of_element_located((By.ID, name)))
+        else:
+            WebDriverWait(self.driver, timeout).until(
                 EC.presence_of_element_located((By.ID, name)))
 
     def wait_for_class(self, name):
         """calls selenium webdriver wait for class name"""
         self.wait.until(EC.presence_of_element_located((By.CLASS_NAME, name)))
 
-    def wait_for_xpath(self, name):
-        """calls selenium webdriver wait for xpath"""
-        self.wait.until(EC.visibility_of_element_located((By.XPATH, name)))
 
-    def wait_for_css_selector(self, name):
+    def wait_for_xpath(self, name, timeout=None, visible=False):
+        """calls selenium webdriver wait for xpath"""
+        if not timeout:
+            timeout = self.timeout
+        if visible:
+            WebDriverWait(self.driver, timeout).until(
+                EC.visibility_of_element_located((By.XPATH, name)))
+        else:
+            WebDriverWait(self.driver, timeout).until(
+                EC.presence_of_element_located((By.XPATH, name)))
+
+    def wait_for_css_selector(self, name, timeout=None, visible=False):
         """calls selenium webdriver wait for css"""
-        self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, name)))
+        if not timeout:
+            timeout = self.timeout
+        if visible:
+            WebDriverWait(self.driver, timeout).until(
+                EC.visibility_of_element_located((By.CSS_SELECTOR, name)))
+        else:
+            WebDriverWait(self.driver, timeout).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, name)))
 
     def wait_for_css_selector_in_element(self, web_element, name):
         """calls selenium webdriver wait for css, search in web_element"""
