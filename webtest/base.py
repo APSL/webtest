@@ -92,7 +92,7 @@ class WebTest(object):
 
     def __init__(self, driver=DRIVER_PHANTOMJS, url=None,
             timeout=DEFAULT_TIMEOUT, proxy=None, stats=False,
-            stats_name='webtest', min_window_width=None):
+            stats_name='webtest', serie_sufix=None, min_window_width=None):
         # proxy = "url_sin_http:port"
         kwargs = self.DRIVER_ARGS[driver]
         if proxy:
@@ -114,6 +114,7 @@ class WebTest(object):
         self.url = url or self.URL
         self.stats = stats
         self.stats_name = stats_name
+        self.serie_sufix = serie_sufix
 
     def _set_min_width(self, min_width):
         """Sets minimal width"""
@@ -211,14 +212,20 @@ class WebTest(object):
                 error = cgi.escape(error)
                 img_src = "{}/{}/errors/{}/{}_{}.png".format(
                     SCREENSHOTS_URL_PREFIX, self.stats_name, name, name, test_uid)
-                err_stats["{}.{}.errors".format(self.stats_name, name)].append(
+                serie_name = "{}.{}.errors".format(self.stats_name, name)
+                if self.serie_sufix:
+                    serie_name += ("." + self.serie_sufix)
+                err_stats[serie_name].append(
                     [time.time(),
                     error_html.format(error=error, img_src=img_src),
                     test_uid])
                 break
             else:
                 print u"Run {name} in {elapsed:10.2f}s ({doc})".format(**locals())
-                ok_stats["{}.{}".format(self.stats_name, name)].append([time.time(), elapsed, test_uid])
+                serie_name = "{}.{}".format(self.stats_name, name)
+                if self.serie_sufix:
+                    serie_name += ("." + self.serie_sufix)
+                ok_stats[serie_name].append([time.time(), elapsed, test_uid])
 
         elapsed_test_time = time.time() - init_test_time
         print u"Total in {}".format(elapsed_test_time)
@@ -249,6 +256,7 @@ class WebTest(object):
                         'name': key,
                         'columns': ['time', 'elapsed', "test_uid"]
                     })
+            
             client.write_points(points)
 
             try:
