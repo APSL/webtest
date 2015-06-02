@@ -236,9 +236,7 @@ class WebTest(object):
                     'name': '{}.total'.format(self.stats_name),
                     'columns': ['time', "elapsed", "test_uid"]
                 })
-                save_htmls_screenshots("{}/oks".format(self.stats_name), self.driver, "{}_{}".format(name, test_uid), push_to_s3=True)
-            else:
-                save_htmls_screenshots("{}/errors/{}".format(self.stats_name, name), self.driver, "{}_{}".format(name, test_uid), push_to_s3=True)
+                
             for key, value in err_stats.iteritems():
                 points.append({
                             'points': value,
@@ -252,6 +250,17 @@ class WebTest(object):
                         'columns': ['time', 'elapsed', "test_uid"]
                     })
             client.write_points(points)
+
+            try:
+                if not err_stats:
+                    save_htmls_screenshots("{}/oks".format(self.stats_name), self.driver, "{}_{}".format(name, test_uid), push_to_s3=True)
+                else:
+                    save_htmls_screenshots("{}/errors/{}".format(self.stats_name, name), self.driver, "{}_{}".format(name, test_uid), push_to_s3=True)
+            except:
+                exc_info = sys.exc_info()
+                trace = "".join(traceback.format_exception(*exc_info))
+                log.error(trace)
+
         self.close()
 
 
