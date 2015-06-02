@@ -3,6 +3,7 @@
 # author: bcabezas@apsl.net
 
 __VERSION__ = '0.0.8'
+
 from .base import WebTest, step
 from .loader import get_test
 from .multimech import BaseTransaction
