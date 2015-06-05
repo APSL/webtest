@@ -181,6 +181,15 @@ class WebTest(object):
         for step in self._get_steps():
             yield step()
 
+    def _compose_serie_name(self, name, error, serie_sufix):
+        """ Wrapper para componer el nombre de las series """
+        serie_name = name
+        if error:
+            serie_name += ".errors"
+        if serie_sufix:
+            serie_name += ".{}".format(serie_sufix)
+        return serie_name
+
     def run(self):
         ok_stats = defaultdict(list)
         err_stats = defaultdict(list)
@@ -212,9 +221,12 @@ class WebTest(object):
                 error = cgi.escape(error)
                 img_src = "{}/{}/errors/{}/{}_{}.png".format(
                     SCREENSHOTS_URL_PREFIX, self.stats_name, name, name, test_uid)
-                serie_name = "{}.{}.errors".format(self.stats_name, name)
-                if self.serie_sufix:
-                    serie_name += ("." + self.serie_sufix)
+                
+                serie_name = self._compose_serie_name("{}.{}".format(self.stats_name, name), error, self.serie_sufix)
+
+                # serie_name = "{}.{}.errors".format(self.stats_name, name)
+                # if self.serie_sufix:
+                #     serie_name += ("." + self.serie_sufix)
                 err_stats[serie_name].append(
                     [time.time(),
                     error_html.format(error=error, img_src=img_src),
@@ -222,25 +234,30 @@ class WebTest(object):
                 break
             else:
                 print u"Run {name} in {elapsed:10.2f}s ({doc})".format(**locals())
-                serie_name = "{}.{}".format(self.stats_name, name)
-                if self.serie_sufix:
-                    serie_name += ("." + self.serie_sufix)
+
+                serie_name = self._compose_serie_name("{}.{}".format(self.stats_name, name), error, self.serie_sufix)
+
+                # serie_name = "{}.{}".format(self.stats_name, name)
+                # if self.serie_sufix:
+                #     serie_name += ("." + self.serie_sufix)
                 ok_stats[serie_name].append([time.time(), elapsed, test_uid])
 
         elapsed_test_time = time.time() - init_test_time
         print u"Total in {}".format(elapsed_test_time)
 
         if self.stats:
+            serie_name  = self._compose_serie_name('{}.executions'.format(self.stats_name), False, self.serie_sufix)
             points = [{
                 'points': [[time.time(), test_uid]],
-                'name': '{}.executions'.format(self.stats_name),
+                'name': serie_name,
                 'columns': ['time', "test_uid"]
             }]
             if not err_stats:
                 # Tiempo Total
+                serie_name  = self._compose_serie_name('{}.total'.format(self.stats_name), False, self.serie_sufix)
                 points.append({
                     'points': [[time.time(), elapsed_test_time, test_uid]],
-                    'name': '{}.total'.format(self.stats_name),
+                    'name': serie_name,
                     'columns': ['time', "elapsed", "test_uid"]
                 })
                 
