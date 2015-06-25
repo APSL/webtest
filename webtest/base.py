@@ -23,7 +23,6 @@ log = logging.getLogger(__name__)
 
 DEFAULT_TIMEOUT = 5
 LIMIT_EXCEPTION_CHARS = 300
-SCREENSHOTS_URL_PREFIX = "https://s3-eu-west-1.amazonaws.com/wachiman-speed"
 
 
 def format_traceback(trace):
@@ -65,6 +64,18 @@ def step(func=None, order=1):
     f.order = order
     return f
 
+class AnyCondition(object):
+    """ Clase para usar con WebDriverWait """
+    def __init__(self, *args):
+        self.conditions = args
+
+    def __call__(self, driver):
+        for cond in self.conditions:
+            try:
+                return cond(driver)
+            except:
+                pass
+        return False
 
 class WebTest(object):
     """Clase base para tests"""
@@ -92,7 +103,8 @@ class WebTest(object):
 
     def __init__(self, driver=DRIVER_PHANTOMJS, url=None,
             timeout=DEFAULT_TIMEOUT, proxy=None, stats=False,
-            stats_name='webtest', serie_sufix=None, min_window_width=None):
+            stats_name='webtest', serie_sufix=None,
+            min_window_width=None, influx_conf=None, screenshots_conf=None):
         # proxy = "url_sin_http:port"
         kwargs = self.DRIVER_ARGS[driver]
         if proxy:
@@ -115,6 +127,8 @@ class WebTest(object):
         self.stats = stats
         self.stats_name = stats_name
         self.serie_sufix = serie_sufix
+        self.influx_conf = influx_conf
+        self.screenshots_conf = screenshots_conf
 
     def _set_min_width(self, min_width):
         """Sets minimal width"""
@@ -130,46 +144,68 @@ class WebTest(object):
 
     def wait_for_id(self, name, timeout=None, visible=False):
         """calls selenium webdriver wait for ID name"""
+        self.driver.implicitly_wait(0.02)
         if not timeout:
             timeout = self.timeout
         if visible:
-            WebDriverWait(self.driver, timeout).until(
+            found_element = WebDriverWait(self.driver, timeout).until(
                 EC.visibility_of_element_located((By.ID, name)))
         else:
-            WebDriverWait(self.driver, timeout).until(
+            found_element = WebDriverWait(self.driver, timeout).until(
                 EC.presence_of_element_located((By.ID, name)))
+        self.driver.implicitly_wait(self.timeout) # Restauramos implicitly_wait
+        return found_element
 
     def wait_for_class(self, name):
         """calls selenium webdriver wait for class name"""
+        self.driver.implicitly_wait(0.02)
         self.wait.until(EC.presence_of_element_located((By.CLASS_NAME, name)))
+        self.driver.implicitly_wait(self.timeout) # Restauramos implicitly_wait
 
 
     def wait_for_xpath(self, name, timeout=None, visible=False):
         """calls selenium webdriver wait for xpath"""
+        self.driver.implicitly_wait(0.02)
         if not timeout:
             timeout = self.timeout
         if visible:
-            WebDriverWait(self.driver, timeout).until(
+            found_element = WebDriverWait(self.driver, timeout).until(
                 EC.visibility_of_element_located((By.XPATH, name)))
         else:
-            WebDriverWait(self.driver, timeout).until(
+            found_element = WebDriverWait(self.driver, timeout).until(
                 EC.presence_of_element_located((By.XPATH, name)))
+        self.driver.implicitly_wait(self.timeout) # Restauramos implicitly_wait
+        return found_element
 
     def wait_for_css_selector(self, name, timeout=None, visible=False):
         """calls selenium webdriver wait for css"""
+        self.driver.implicitly_wait(0.02)
         if not timeout:
             timeout = self.timeout
         if visible:
-            WebDriverWait(self.driver, timeout).until(
+            found_element = WebDriverWait(self.driver, timeout).until(
                 EC.visibility_of_element_located((By.CSS_SELECTOR, name)))
         else:
-            WebDriverWait(self.driver, timeout).until(
+            found_element = WebDriverWait(self.driver, timeout).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, name)))
+        self.driver.implicitly_wait(self.timeout) # Restauramos implicitly_wait
+        return found_element
 
     def wait_for_css_selector_in_element(self, web_element, name):
         """calls selenium webdriver wait for css, search in web_element"""
-        WebDriverWait(web_element, self.timeout).until(
+        self.driver.implicitly_wait(0.02)
+        found_element = WebDriverWait(web_element, self.timeout).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, name)))
+        self.driver.implicitly_wait(self.timeout) # Restauramos implicitly_wait
+        return found_element
+
+    def wait_until(self, condition, timeout=None):
+        self.driver.implicitly_wait(0.02)
+        if not timeout:
+            timeout = self.timeout
+        found_element =  WebDriverWait(self.driver, timeout).until(condition)
+        self.driver.implicitly_wait(self.timeout) # Restauramos implicitly_wait
+        return found_element
 
     def _get_steps(self):
         steps = inspect.getmembers(self, predicate=inspect.ismethod)
@@ -193,8 +229,6 @@ class WebTest(object):
     def run(self):
         ok_stats = defaultdict(list)
         err_stats = defaultdict(list)
-        if self.stats:
-            client = get_metrics_client()
 
         test_uid = str(uuid.uuid1())
         init_test_time = time.time()
@@ -220,7 +254,7 @@ class WebTest(object):
                 print u"ERROR {name} in {elapsed:10.2f}s ({doc}) --> [[{error}]]".format(**locals())
                 error = cgi.escape(error)
                 img_src = "{}/{}/errors/{}/{}_{}.png".format(
-                    SCREENSHOTS_URL_PREFIX, self.stats_name, name, name, test_uid)
+                    self.screenshots_conf["SCREENSHOTS_URL_PREFIX"], self.stats_name, name, name, test_uid)
                 
                 serie_name = self._compose_serie_name("{}.{}".format(self.stats_name, name), error, self.serie_sufix)
 
@@ -274,13 +308,18 @@ class WebTest(object):
                         'columns': ['time', 'elapsed', "test_uid"]
                     })
             
+
+            client = get_metrics_client(self.influx_conf)
             client.write_points(points)
 
             try:
-                if not err_stats:
-                    save_htmls_screenshots("{}/oks".format(self.stats_name), self.driver, "{}_{}".format(name, test_uid), push_to_s3=True)
-                else:
-                    save_htmls_screenshots("{}/errors/{}".format(self.stats_name, name), self.driver, "{}_{}".format(name, test_uid), push_to_s3=True)
+                if self.screenshots_conf:
+                    if not err_stats:
+                        save_htmls_screenshots("{}/oks".format(self.stats_name), self.driver,
+                            "{}_{}".format(name, test_uid), self.screenshots_conf)
+                    else:
+                        save_htmls_screenshots("{}/errors/{}".format(self.stats_name, name),
+                            self.driver, "{}_{}".format(name, test_uid), self.screenshots_conf)
             except:
                 exc_info = sys.exc_info()
                 trace = "".join(traceback.format_exception(*exc_info))
