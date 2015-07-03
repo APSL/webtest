@@ -144,7 +144,7 @@ class WebTest(object):
 
     def wait_for_id(self, name, timeout=None, visible=False):
         """calls selenium webdriver wait for ID name"""
-        self.driver.implicitly_wait(0.02)
+        self.driver.implicitly_wait(0.5)
         if not timeout:
             timeout = self.timeout
         if visible:
@@ -158,14 +158,14 @@ class WebTest(object):
 
     def wait_for_class(self, name):
         """calls selenium webdriver wait for class name"""
-        self.driver.implicitly_wait(0.02)
+        self.driver.implicitly_wait(0.5)
         self.wait.until(EC.presence_of_element_located((By.CLASS_NAME, name)))
         self.driver.implicitly_wait(self.timeout) # Restauramos implicitly_wait
 
 
     def wait_for_xpath(self, name, timeout=None, visible=False):
         """calls selenium webdriver wait for xpath"""
-        self.driver.implicitly_wait(0.02)
+        self.driver.implicitly_wait(0.5)
         if not timeout:
             timeout = self.timeout
         if visible:
@@ -179,7 +179,7 @@ class WebTest(object):
 
     def wait_for_css_selector(self, name, timeout=None, visible=False):
         """calls selenium webdriver wait for css"""
-        self.driver.implicitly_wait(0.02)
+        self.driver.implicitly_wait(0.5)
         if not timeout:
             timeout = self.timeout
         if visible:
@@ -193,14 +193,14 @@ class WebTest(object):
 
     def wait_for_css_selector_in_element(self, web_element, name):
         """calls selenium webdriver wait for css, search in web_element"""
-        self.driver.implicitly_wait(0.02)
+        self.driver.implicitly_wait(0.5)
         found_element = WebDriverWait(web_element, self.timeout).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, name)))
         self.driver.implicitly_wait(self.timeout) # Restauramos implicitly_wait
         return found_element
 
     def wait_until(self, condition, timeout=None):
-        self.driver.implicitly_wait(0.02)
+        self.driver.implicitly_wait(0.1)
         if not timeout:
             timeout = self.timeout
         found_element =  WebDriverWait(self.driver, timeout).until(condition)
