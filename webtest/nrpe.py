@@ -60,16 +60,18 @@ def do_test(webtest):
 
 @click.command()
 @click.option('--testdir', type=click.Path(exists=True, readable=True), 
-        default=DEFAULT_TESTDIR, 
+        default=DEFAULT_TESTDIR,
         help='Directory containing tests')
+@click.option('--driver', type=click.Choice(['firefox', 'remote']),
+        default='firefox', help='Selenium Driver')
 @click.version_option(__VERSION__)
 @click.argument('test_name')
-def test(testdir, test_name):
+def test(testdir, test_name, driver='firefox'):
     """NRPRE nagios Test"""
 
-    webtest = get_test(test_name, testdir=testdir, driver='remote')
+    webtest = get_test(test_name, testdir=testdir, driver=driver)
     if not webtest:
-        return(nagios_return(code='UNKNOWN', 
+        return(nagios_return(code='UNKNOWN',
             response="Test {test_name} not found in {testdir}".format(
                 **locals())))
 

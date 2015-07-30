@@ -31,6 +31,7 @@ class IPProxyRequest(ProxyRequest):
         clientFactory = class_(self.method, rest, self.clientproto, headers,
                                s, self)
 
+        import ipdb;ipdb.set_trace();
         if "host1" in host or "host2" in host:
             print("CHANGE")
             #host = "ip1"
@@ -48,4 +49,5 @@ class IPProxyFactory(http.HTTPFactory):
 
 
 reactor.listenTCP(8088, IPProxyFactory())
+reactor.run()
 #reactor.listenUnix("/tmp/ps", IPProxyFactory())

@@ -1,13 +1,13 @@
 #!/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
 import time
 import functools
 import inspect
 import logging
 import traceback
 import sys
-from webtest.metrics import get_metrics_client
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -16,13 +16,14 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.common.proxy import Proxy, ProxyType
 import uuid
 from collections import defaultdict
-from webtest.screenshots import save_htmls_screenshots
 import cgi
 
 log = logging.getLogger(__name__)
 
 DEFAULT_TIMEOUT = 5
 LIMIT_EXCEPTION_CHARS = 300
+HUB_HOST = os.getenv('HUB_HOST', 'hub')
+HUB_PORT = os.getenv('HUB_PORT', 4444)
 
 
 def format_traceback(trace):
@@ -96,7 +97,7 @@ class WebTest(object):
         DRIVER_FIREFOX: {
         },
         DRIVER_REMOTE: {
-            'command_executor': 'http://hub:4444/wd/hub',
+            'command_executor': 'http://{}:{}/wd/hub'.format(HUB_HOST, HUB_PORT),
             'desired_capabilities': DesiredCapabilities.FIREFOX,
             },
     }
@@ -309,11 +310,13 @@ class WebTest(object):
                     })
             
 
+            from webtest.metrics import get_metrics_client
             client = get_metrics_client(self.influx_conf)
             client.write_points(points)
 
             try:
                 if self.screenshots_conf:
+                    from webtest.screenshots import save_htmls_screenshots
                     if not err_stats:
                         save_htmls_screenshots("{}/oks".format(self.stats_name), self.driver,
                             "{}_{}".format(name, test_uid), self.screenshots_conf)
