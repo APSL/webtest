@@ -263,6 +263,7 @@ class WebTest(object):
                 #     serie_name += ("." + self.serie_sufix)
                 err_stats[serie_name].append(
                     [time.time(),
+                    elapsed,
                     error_html.format(error=error, img_src=img_src),
                     test_uid])
                 break
@@ -299,7 +300,7 @@ class WebTest(object):
                 points.append({
                             'points': value,
                             'name': key,
-                            'columns': ['time', "error", "test_uid"]
+                            'columns': ['time', 'elapsed', "error", "test_uid"]
                         })
             for key, value in ok_stats.iteritems():
                 points.append({
