@@ -244,11 +244,11 @@ class WebTest(object):
             <td width="300">
                 <img width="300px" src='{img_src}'/>
             </td>
-            <td width="500" style="vertical-align:top;">
-                <pre>
-                    <span style="font-size:10px; font-weight:normal">
+            <td width="500" style="vertical-align:top; font-size:10px; font-weight:normal">
+                <pre style="font-size:10px; font-weight:normal">
+                    <div style="font-size:10px; font-weight:normal">
                     {error}
-                    </span>
+                    </div>
                 </pre>
             </td>
         </tr>
