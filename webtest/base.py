@@ -237,17 +237,20 @@ class WebTest(object):
             if error:
 
                 error_html="""
-<div>
+<div style="max-height:575px">
     <table>
+        <tbody>
         <tr>
-            <td>
-                <img width="300px" valign="top" src='{img_src}' />
+            <td width="300">
+                <img width="300px" src='{img_src}'/>
             </td>
-            <td width="300px">
-                <font size="1">
+            <td width="500" style="vertical-align:top;">
+                <pre style="font-size:10px; font-weight:normal">
                     {error}
-                </font>
+                </pre>
             </td>
+        </tr>
+        </tbody>
     </table>
 </div>
 """
