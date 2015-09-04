@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # author: bcabezas@apsl.net
 
-__VERSION__ = '0.0.14'
+__VERSION__ = '0.0.15'
 
 from .base import WebTest, step, AnyCondition
 from .loader import get_test
