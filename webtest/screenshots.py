@@ -1,9 +1,17 @@
 import os
 import tinys3
 import logging
+from PIL import Image
 
 
 def save_htmls_screenshots(folder, driver, filename, screenshots_conf):
+
+    def crop_height_img(fullpath, max_heigh=1800):
+        """ Recorta la imagen a lo largo """
+        img = Image.open(fullpath)
+        if img.height > max_heigh:
+            img_cropped = img.crop((0, 0, img.width, max_heigh))
+        img_cropped.save(fullpath)
 
     def size_of_dir(dirname):
         """Walks through the directory, getting the cumulative size of the directory"""
@@ -31,7 +39,10 @@ def save_htmls_screenshots(folder, driver, filename, screenshots_conf):
         clear_dir(path)
 
     try:
-        driver.save_screenshot(os.path.join(path, "%s.png" % filename))
+        fullpath = os.path.join(path, "%s.png" % filename)
+        driver.save_screenshot(fullpath)
+        # Recortamos la imagen a lo largo para una correcta visualizacion en grafana
+        crop_height_img(fullpath)
     except Exception as ex:
         logging.warning("No se ha podido guardar el screenshot '%s/%s.png' :\n %s" % (path, filename, ex))
     else:
@@ -50,8 +61,8 @@ def save_htmls_screenshots(folder, driver, filename, screenshots_conf):
 
 def push_file_to_s3(filename, filepath, s3_folder, screenshots_conf):
     f = None
+    fullpath = "%s/%s" % (filepath, filename)
     try:
-        fullpath = "%s/%s" % (filepath, filename)
         f = open(fullpath, "rb")
     except IOError as e:
         logging.error("No se ha podido subir el archivo para subirlo a S3, posiblemente no se ha guardado: \n%s" % e)
@@ -61,6 +72,7 @@ def push_file_to_s3(filename, filepath, s3_folder, screenshots_conf):
                 screenshots_conf["AWS_SECRET_ACCESS_KEY"],
                 endpoint=screenshots_conf["ENDPOINT"])
             conn.upload("%s/%s" % (s3_folder, filename), f, screenshots_conf["BUCKET_NAME"])
+            print "%s/%s" % (s3_folder, filename)
             f.close()
         except Exception as e:
             f.close()

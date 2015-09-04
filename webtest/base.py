@@ -243,7 +243,6 @@ class WebTest(object):
 # </style>
 
                 error_html="""
-<div id="webtest">           
 <div id="webtest_error">
     <table>
         <tbody>
@@ -259,7 +258,6 @@ class WebTest(object):
         </tr>
         </tbody>
     </table>
-</div>
 </div>
 """
                 print u"ERROR {name} in {elapsed:10.2f}s ({doc}) --> [[{error}]]".format(**locals())
