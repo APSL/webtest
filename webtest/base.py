@@ -237,23 +237,28 @@ class WebTest(object):
             if error:
 
                 error_html="""
-<div style="max-height:575px">
+<div id="webtest">
+<style>
+    #webtest_error pre { vertical-align:top !important; font-size:10px !important; font-weight:normal !important; }
+    #webtest_error td { vertical-align:top !important; }
+    #webtest_error { max-height:575px !important; }
+</style>           
+<div id="webtest_error">
     <table>
         <tbody>
         <tr>
             <td width="300">
                 <img width="300px" src='{img_src}'/>
             </td>
-            <td width="500" style="vertical-align:top; font-size:10px; font-weight:normal">
-                <pre style="font-size:10px; font-weight:normal">
-                    <div style="font-size:10px; font-weight:normal">
+            <td width="500">
+                <pre>
                     {error}
-                    </div>
                 </pre>
             </td>
         </tr>
         </tbody>
     </table>
+</div>
 </div>
 """
                 print u"ERROR {name} in {elapsed:10.2f}s ({doc}) --> [[{error}]]".format(**locals())
