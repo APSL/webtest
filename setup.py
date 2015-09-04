@@ -27,6 +27,7 @@ setup(
     install_requires=[
         'selenium',
         'tinys3',
+        'Pillow==2.9.0',
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',
