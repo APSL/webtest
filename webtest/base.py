@@ -239,9 +239,9 @@ class WebTest(object):
                 error_html="""
 <div id="webtest">
 <style>
-    #webtest_error pre { vertical-align:top !important; font-size:10px !important; font-weight:normal !important; }
-    #webtest_error td { vertical-align:top !important; }
-    #webtest_error { max-height:575px !important; }
+    #webtest_error pre {{ vertical-align:top !important; font-size:10px !important; font-weight:normal !important; }}
+    #webtest_error td {{ vertical-align:top !important; }}
+    #webtest_error {{ max-height:575px !important; }}
 </style>           
 <div id="webtest_error">
     <table>
