@@ -236,13 +236,14 @@ class WebTest(object):
         for elapsed, name, doc, error in self:
             if error:
 
-                error_html="""
-<div id="webtest">
-<style>
+# <style>
     #webtest_error pre {{ vertical-align:top !important; font-size:10px !important; font-weight:normal !important; }}
     #webtest_error td {{ vertical-align:top !important; }}
     #webtest_error {{ max-height:575px !important; }}
-</style>           
+# </style>
+
+                error_html="""
+<div id="webtest">           
 <div id="webtest_error">
     <table>
         <tbody>
@@ -251,9 +252,9 @@ class WebTest(object):
                 <img width="300px" src='{img_src}'/>
             </td>
             <td width="500">
-                <pre>
+                <font size="1">
                     {error}
-                </pre>
+                </font>
             </td>
         </tr>
         </tbody>
@@ -263,6 +264,7 @@ class WebTest(object):
 """
                 print u"ERROR {name} in {elapsed:10.2f}s ({doc}) --> [[{error}]]".format(**locals())
                 error = cgi.escape(error)
+                error = error.replace("\n", "<br>")
                 img_src = "{}/{}/errors/{}/{}_{}.png".format(
                     self.screenshots_conf["SCREENSHOTS_URL_PREFIX"], self.stats_name, name, name, test_uid)
                 
