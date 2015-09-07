@@ -29,7 +29,7 @@ def format_traceback(trace):
     result = ""
     for index, s_trace in enumerate(trace.split("File")):
         if index > 0:
-            result += "File "
+            result += "- File "
         result += s_trace[:LIMIT_EXCEPTION_CHARS]
     return result
 
