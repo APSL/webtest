@@ -10,8 +10,8 @@ def save_htmls_screenshots(folder, driver, filename, screenshots_conf):
         """ Recorta la imagen a lo largo """
         img = Image.open(fullpath)
         if img.height > max_heigh:
-            img_cropped = img.crop((0, 0, img.width, max_heigh))
-        img_cropped.save(fullpath)
+            img = img.crop((0, 0, img.width, max_heigh)) # para que grafana pueda pintarla bien.
+        img.save(fullpath)
 
     def size_of_dir(dirname):
         """Walks through the directory, getting the cumulative size of the directory"""
